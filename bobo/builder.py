@@ -80,7 +80,7 @@ class Builder(object):
             self.set_work_dir(work_dir)
         logging.info(self.get_work_dir())
         
-        if args.cmd == 'build' or args.cmd == 'b':
+        if args.cmd == None or args.cmd == 'build' or args.cmd == 'b':
             self.build()
         elif args.cmd == 'test' or args.cmd == 't':
             self.test()
@@ -167,7 +167,7 @@ def main(args=None):
     logging.debug('Welcome to Bobo!')
     parser = argparse.ArgumentParser(description='Bobo, an easy to use '
         'building tool.')
-    parser.add_argument('cmd', help='Command: build, test or run')
+    parser.add_argument('cmd', nargs='?', help='Command: build, test or run')
     parser.add_argument('target', nargs='?', help='Target: a target or a directory')
     args = parser.parse_args(args)
     

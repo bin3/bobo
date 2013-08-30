@@ -60,7 +60,10 @@ class DependencyAnalyzer(object):
         i = 0
         while i < len(self.sorted_paths):
             cur = self.sorted_paths[i]
+            cur_target = self.target_map[cur]
             for in_node in self.in_nodes[cur]:
+                t = self.target_map[in_node]
+                t.add_deps(cur_target)
                 self.out_degs[in_node] -= 1
                 if self.out_degs[in_node] == 0:
                     self.sorted_paths.append(in_node)

@@ -20,10 +20,12 @@ __author__ = 'Binson Zhang <bin183cs@gmail.com>'
 __date__ = '2013-8-25'
 
 import os
+import logging
 
 import console
 import generator
 import fileutil
+import logutil
 
 TOP_ENV = 'top_env'
 BUILD_DIR = 'build'
@@ -72,7 +74,8 @@ class Target(object):
         self.full_name = self.path.replace(os.sep, NAME_SEP)
         self.env = ENV_PREFIX + self.full_name
         self.dep_paths = self.norm_deps(self.deps)
-        self.all_dep_paths = []
+        self.all_dep_targets = []
+        self.rules = []
         
     def gen_rules(self):
         return []
@@ -98,12 +101,45 @@ class Target(object):
                 dep = fileutil.norm_path(dep)
             paths.append(dep)
         return paths
-                
+    
+    def add_deps(self, target):
+        self.all_dep_targets.extend(target.all_dep_targets)
+        self.all_dep_targets.append(target)
+        
+    def names_str(self, targets):
+        names = []
+        for t in targets:
+            names.append(t.full_name)
+        return ', '.join(names)
+    
+    def split_deps(self):
+        """split all_dep_targets to lib_deps and other_deps
+        """
+        lib_deps = []
+        other_deps = []
+        for t in self.all_dep_targets:
+            if isinstance(t, CcLibrary):
+                lib_deps.append(t)
+            else:
+                other_deps.append(t)
+        logging.debug('lib_deps: %s' % lib_deps)
+        logging.debug('other_deps: %s' % other_deps)
+        return (lib_deps, other_deps)
+    
+    def gen_build_target(self):
+        return quote(os.path.join(generator.BUILD_DIR, self.path))
         
     def in_cur_dir(self, dep):
         if not dep.startswith(fileutil.ROOT_PREFIX) and not dep.startswith(fileutil.EXTERNAL_PREFIX):
             return True
         return False
+    
+    def gen_env_rule(self):
+        self.rules.append('%s = %s.Clone()\n' % (self.env, TOP_ENV))
+        
+    def gen_depend_rules(self, deps):
+        if len(deps) > 0:
+            self.rules.append('%s.Depends(%s, %s)\n' % (self.env, self.full_name, self.names_str(deps)))
     
     def __str__(self):
         return 'key: %s, deps: %s, roots: %s' % (self.key, self.deps, self.roots)
@@ -123,18 +159,13 @@ class SrcsTarget(Target):
         Target.__init__(self, work_dir, name, deps, roots)
         self.srcs = to_list(srcs)
         self.builder = None
-    
-    def gen_rules(self):
-        rules = []
+        
+    def gen_build_srcs(self):
         build_srcs = []
         for src in self.srcs:
             build_srcs.append(quote(os.path.join(generator.BUILD_DIR, self.work_dir, src)))
-        build_target = quote(os.path.join(generator.BUILD_DIR, self.path))
-        rules.append('%s = %s.Clone()\n' % (self.env, TOP_ENV))
-        rules.append('%s = %s.%s(%s, [%s])\n' % \
-                     (self.full_name, self.env, self.builder, build_target, ', '.join(build_srcs)))
-        rules.append('\n')
-        return rules
+        return ', '.join(build_srcs)
+    
     
 class CcLibrary(SrcsTarget):    
     """cc_library
@@ -147,6 +178,16 @@ class CcLibrary(SrcsTarget):
                  roots=[]):
         SrcsTarget.__init__(self, work_dir, name, srcs, deps, roots)
         self.builder = 'StaticLibrary'
+        
+    def gen_rules(self):
+        self.gen_env_rule()
+        self.rules.append('%s = %s.StaticLibrary(%s, [%s])\n' % \
+                     (self.full_name, self.env, 
+                      self.gen_build_target(), 
+                      self.gen_build_srcs()))
+        self.gen_depend_rules(self.all_dep_targets)
+        self.rules.append('\n')
+        return self.rules
 
 class CcBinary(SrcsTarget):    
     """cc_binary
@@ -159,3 +200,15 @@ class CcBinary(SrcsTarget):
                  roots=[]):
         SrcsTarget.__init__(self, work_dir, name, srcs, deps, roots)
         self.builder = 'Program'
+
+    def gen_rules(self):
+        self.gen_env_rule()
+        (lib_deps, other_deps) = self.split_deps()
+        self.rules.append('%s = %s.Program(%s, [%s], LIBS=[%s])\n' % \
+                     (self.full_name, self.env, 
+                      self.gen_build_target(), 
+                      self.gen_build_srcs(),
+                      self.names_str(lib_deps)))
+        self.gen_depend_rules(other_deps)
+        self.rules.append('\n')
+        return self.rules
