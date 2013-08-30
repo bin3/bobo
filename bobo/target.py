@@ -68,10 +68,11 @@ class Target(object):
         self.deps = to_list(deps)
         self.roots = to_list(roots)
         
-        self.key = (work_dir, name)
-        self.full_path = os.path.join(self.work_dir, self.name)
-        self.full_name = self.full_path.replace(os.sep, NAME_SEP)
+        self.path = os.path.join(self.work_dir, self.name)
+        self.full_name = self.path.replace(os.sep, NAME_SEP)
         self.env = ENV_PREFIX + self.full_name
+        self.dep_paths = self.norm_deps(self.deps)
+        self.all_dep_paths = []
         
     def gen_rules(self):
         return []
@@ -88,6 +89,22 @@ class Target(object):
         else:
             return work_dir
             
+    def norm_deps(self, deps):
+        paths = []
+        for dep in deps:
+            if self.in_cur_dir(dep):
+                dep = os.path.join(self.work_dir, dep)
+            else:
+                dep = fileutil.norm_path(dep)
+            paths.append(dep)
+        return paths
+                
+        
+    def in_cur_dir(self, dep):
+        if not dep.startswith(fileutil.ROOT_PREFIX) and not dep.startswith(fileutil.EXTERNAL_PREFIX):
+            return True
+        return False
+    
     def __str__(self):
         return 'key: %s, deps: %s, roots: %s' % (self.key, self.deps, self.roots)
     
@@ -112,7 +129,7 @@ class SrcsTarget(Target):
         build_srcs = []
         for src in self.srcs:
             build_srcs.append(quote(os.path.join(generator.BUILD_DIR, self.work_dir, src)))
-        build_target = quote(os.path.join(generator.BUILD_DIR, self.full_path))
+        build_target = quote(os.path.join(generator.BUILD_DIR, self.path))
         rules.append('%s = %s.Clone()\n' % (self.env, TOP_ENV))
         rules.append('%s = %s.%s(%s, [%s])\n' % \
                      (self.full_name, self.env, self.builder, build_target, ', '.join(build_srcs)))

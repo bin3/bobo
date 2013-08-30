@@ -1,0 +1,13 @@
+import os
+
+top_env = Environment(ENV=os.environ)
+
+BUILD_DIR = 'build'
+top_env.Append(CPPPATH='.')
+top_env.Append(LIBPATH=BUILD_DIR)
+
+VariantDir(BUILD_DIR, '.', duplicate=0)
+
+env_cc_library__adder = top_env.Clone()
+cc_library__adder = env_cc_library__adder.StaticLibrary('build/cc_library/adder', ['build/cc_library/adder.cpp'])
+

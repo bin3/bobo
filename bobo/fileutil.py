@@ -60,5 +60,19 @@ def get_work_dir(root_dir, abs_work_dir):
     assert abs_work_dir.startswith(root_dir)
     return abs_work_dir[len(root_dir)+1:]
 
+def get_work_dir_from_path(path):
+    return os.path.dirname(path)
+
 def get_sconstruct_file(root_dir):
     return os.path.join(root_dir, 'SConstruct')
+
+def norm_path(path):
+    """normalize path from user input 
+    e.g. '/util/adder' -> 'util/adder'
+    """
+    if path.startswith(WORKSPACE_PREFIX):
+        # TODO(bin3): impl
+        console.abort('Not implemented')
+    elif path.startswith(ROOT_PREFIX):
+        return path[len(ROOT_PREFIX):]
+    return path

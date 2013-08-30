@@ -27,8 +27,9 @@ import subprocess
 import logutil
 import fileutil
 import console
-import script_loader
+import loader
 import generator
+import dependency
 
 g_builder = None
 
@@ -38,27 +39,31 @@ class Builder(object):
     def __init__(self, root_dir, work_dir):
         self.root_dir = root_dir
         self.work_dir = work_dir
-        self.script_loader = script_loader.get_loader(self.root_dir)
-        self.script_loader.load_root_file()
-        self.script_loader.set_work_dir(self.work_dir)
+        self.loader = loader.get_loader(self.root_dir)
+        self.loader.load_root_file()
+        self.loader.set_work_dir(self.work_dir)
         logging.debug('init done')
         console.succ('init done')
         
-        self.ordered_targets = []  # targets in order decreased by dependencies
+        self.sorted_targets = []  # targets in order decreased by dependencies
         self.rules = []
+        self.loaded_dirs = set()
+        self.target_map = {}
         
     def build(self):
         console.info('building ...')
         logging.debug('')
-        targets = self.script_loader.load_build_file(self.work_dir)
-        # TODO(bin3): calculate ordered_targets
-        ordered_targets = targets
+        targets = self.loader.load_build_file(self.work_dir)
+        self.load_all_deps(targets)
         
+        analyzer = dependency.DependencyAnalyzer(targets, self.target_map)
+        sorted_targets = analyzer.analyze()
+            
         self.gen_head_rules()
-        for i in range(len(ordered_targets)-1, -1, -1):
-            self.gen_rules(ordered_targets[i])
+        for t in sorted_targets:
+            self.gen_rules(t)
         self.write_rules()
-        logging.debug('targets: %s' % ordered_targets)
+        logging.debug('targets: %s' % sorted_targets)
         console.succ('build done')
         
     def test(self, target):
@@ -70,9 +75,14 @@ class Builder(object):
         
         os.chdir(self.root_dir)
         
-        if args.cmd == 'build':
+        if args.target != None:
+            work_dir = os.path.join(self.work_dir, args.target)
+            self.set_work_dir(work_dir)
+        logging.info(self.get_work_dir())
+        
+        if args.cmd == 'build' or args.cmd == 'b':
             self.build()
-        elif args.cmd == 'test':
+        elif args.cmd == 'test' or args.cmd == 't':
             self.test()
         else:
             logging.error('Invalid command: %s' % args.cmd)
@@ -95,7 +105,42 @@ class Builder(object):
         sconstruct_file = fileutil.get_sconstruct_file(self.root_dir)
         with open(sconstruct_file , 'w') as outf:
             outf.writelines(self.rules)
+        
+    def load_all_deps(self, targets):
+        """load all depended targets for given targets
+        """
+        for t in targets:
+            self.target_map[t.path] = t
             
+        for t in targets:
+            self.load_deps(t)
+            
+    def load_deps(self, target):
+        """load depended targets for a given target
+        """
+        logging.debug('path=%s, dep_paths=%s' % (target.path, target.dep_paths))
+        for path in target.dep_paths:
+            dep_target = self.load_target(path)
+            self.load_deps(dep_target)
+            
+    def load_target(self, path):
+        """load a target if necessary
+        """
+        if path in self.target_map:
+            return self.target_map[path]
+        work_dir = fileutil.get_work_dir_from_path(path)
+        targets = self.loader.load_build_file(work_dir)
+        logging.debug('targets: %s' % targets)
+        target = None
+        for t in targets:
+            self.target_map[t.path] = t
+            logging.debug('t.path=%s' % t.path)
+            if path == t.path:
+                target = t
+        if target == None:
+            console.abort('No target %s found' % path)
+        return target
+                      
     def exec_scons(self):
         #options
         scons_options = '--duplicate=soft-copy --cache-show'
@@ -106,7 +151,6 @@ class Builder(object):
     
         logging.info('scons_options: %s' % scons_options)
         logging.info('cwd: %s' % os.getcwd())
-    #    exit(1)
         
         p = subprocess.Popen("scons %s" % scons_options, shell=True)
         try:
@@ -117,35 +161,15 @@ class Builder(object):
         except:  # KeyboardInterrupt
             return 1
         console.succ("building done")
-        return 0
-        
-    # ----------- Not used right now
-    def register(self, target):
-        """Register a target"""
-        self._target_map[target.key] = target
-        
-    def find_deps(self, target):
-        for dep in target.deps:
-            self.find_dep(target, dep)
-            
-    def find_dep(self, target, dep_path):
-        """Find the dependent target for a given target
-        """
-        sep = dep_path.rfind(fileutil.PATH_SEPARATOR)
-        if sep == -1:
-            (dep_dir, name) = ('.', dep_path)
-        else:
-            (dep_dir, name) = (dep_path[:sep], dep_path[sep+1:])
-        if len(name) == 0:
-            console.abort('Failed to find dependent target %s, the path(%s) is '
-                        'invalid' % (dep_path,  target.key))
-        
-def main():
+        return 0  
+    
+def main(args=None):
     logging.debug('Welcome to Bobo!')
     parser = argparse.ArgumentParser(description='Bobo, an easy to use '
         'building tool.')
     parser.add_argument('cmd', help='Command: build, test or run')
-    args = parser.parse_args()
+    parser.add_argument('target', nargs='?', help='Target: a target or a directory')
+    args = parser.parse_args(args)
     
     abs_work_dir = os.getcwd()
     console.info('Working directory: %s' % abs_work_dir)
