@@ -32,7 +32,7 @@ class DependencyAnalyzer(object):
         self.in_nodes = defaultdict(list)
         self.built_paths = set()
         self.sorted_paths = []
-        logging.debug(self.target_map)
+        logging.debug('target_map: %s' % self.target_map)
     
     def analyze(self):
         """analyze dependency graph and return topological sorted targets

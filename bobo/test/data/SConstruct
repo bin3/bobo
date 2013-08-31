@@ -8,6 +8,17 @@ top_env.Append(LIBPATH=BUILD_DIR)
 
 VariantDir(BUILD_DIR, '.', duplicate=0)
 
+top_env.Append(
+		CCCOMSTR = '[33mCompiling $SOURCE[0m',
+		CXXCOMSTR = '[33mCompiling $SOURCE[0m',
+		SHCCCOMSTR = '[33mCompiling $SOURCE[0m',
+		SHCXXCOMSTR = '[33mCompiling $SOURCE[0m',
+		ARCOMSTR = '[1;35mBuilding $TARGET[0m',
+		RANLIBCOMSTR = '[1;35mranlib $TARGET[0m',
+		LINKCOMSTR = '[31mBuilding $TARGET[0m',
+		SHLINKCOMSTR = '[31mBuilding $TARGET[0m'
+)
+
 env_cc_library__adder = top_env.Clone()
 cc_library__adder = env_cc_library__adder.StaticLibrary('build/cc_library/adder', ['build/cc_library/adder.cpp'])
 

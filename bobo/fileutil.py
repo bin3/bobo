@@ -76,3 +76,10 @@ def norm_path(path):
     elif path.startswith(ROOT_PREFIX):
         return path[len(ROOT_PREFIX):]
     return path
+
+def is_external_path(path):
+    return path.startswith(EXTERNAL_PREFIX)
+
+def get_exteranl_name(path):
+    assert is_external_path(path)
+    return path[len(EXTERNAL_PREFIX):]

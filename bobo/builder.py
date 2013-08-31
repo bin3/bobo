@@ -30,6 +30,7 @@ import console
 import loader
 import generator
 import dependency
+from target import ExternalTarget
 
 g_builder = None
 
@@ -46,8 +47,8 @@ class Builder(object):
         
         self.sorted_targets = []  # targets in order decreased by dependencies
         self.rules = []
-        self.loaded_dirs = set()
-        self.target_map = {}
+#        self.loaded_dirs = set()
+#        self.target_map = {}
         
     def build(self):
         targets = self.loader.load_build_file(self.work_dir)
@@ -108,9 +109,11 @@ class Builder(object):
     def load_all_deps(self, targets):
         """load all depended targets for given targets
         """
+        self.target_map = {}
         for t in targets:
-            self.target_map[t.path] = t
+            self.register_target(t)
             
+        self.loaded_deps = set()
         for t in targets:
             self.load_deps(t)
             
@@ -118,21 +121,42 @@ class Builder(object):
         """load depended targets for a given target
         """
         logging.debug('path=%s, dep_paths=%s' % (target.path, target.dep_paths))
+        if target in self.loaded_deps: return
+        self.loaded_deps.add(target)
+         
         for path in target.dep_paths:
             dep_target = self.load_target(path)
             self.load_deps(dep_target)
             
+    def has_target(self, path):
+        return path in self.target_map
+    
+    def get_target(self, path):
+        if path in self.target_map:
+            return self.target_map[path]
+        return None
+    
+    def register_target(self, target):
+        self.target_map[target.path] = target
+    
     def load_target(self, path):
         """load a target if necessary
         """
-        if path in self.target_map:
-            return self.target_map[path]
+        if self.has_target(path):
+            return self.get_target(path)
+        
+        if fileutil.is_external_path(path):
+            # do not need to load BUILD file, just create a ExternalTarget 
+            target = ExternalTarget(path)
+            self.register_target(target)
+            return target
+        
         work_dir = fileutil.get_work_dir_from_path(path)
         targets = self.loader.load_build_file(work_dir)
         logging.debug('targets: %s' % targets)
         target = None
         for t in targets:
-            self.target_map[t.path] = t
+            self.register_target(t)
             logging.debug('t.path=%s' % t.path)
             if path == t.path:
                 target = t

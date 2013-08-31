@@ -51,6 +51,39 @@ def quote(s):
 class Target(object):
     """Target is the unit building block.
     """
+    def __init__(self, path):
+        self.path = path
+        self.name = path
+        self.full_name = path
+        self.dep_paths = []
+        self.all_dep_targets = []
+        
+    def gen_rules(self):
+        """generate scons rules for this target
+        """
+        return []
+    
+    def get_build_name(self):
+        """return the name for building
+        """
+        return self.full_name
+    
+    def __hash__(self):
+        return self.path.__hash__()
+    
+class ExternalTarget(Target):
+    """External target, do not need to build it
+    """
+    def __init__(self, path):
+        Target.__init__(self, path)
+        self.name = fileutil.get_exteranl_name(path)
+    
+    def get_build_name(self):
+        return quote(self.name)
+    
+class LocalTarget(Target):
+    """Local target, need to build it
+    """
     def __init__(self, 
                  work_dir,
                  name,
@@ -77,9 +110,6 @@ class Target(object):
         self.all_dep_targets = []
         self.rules = []
         
-    def gen_rules(self):
-        return []
-    
     def full_name(self):
         return os.path.join(self.work_dir, self.name)
     
@@ -109,7 +139,7 @@ class Target(object):
     def names_str(self, targets):
         names = []
         for t in targets:
-            names.append(t.full_name)
+            names.append(t.get_build_name())
         return ', '.join(names)
     
     def split_deps(self):
@@ -118,7 +148,7 @@ class Target(object):
         lib_deps = []
         other_deps = []
         for t in self.all_dep_targets:
-            if isinstance(t, CcLibrary):
+            if isinstance(t, CcLibrary) or isinstance(t, ExternalTarget):
                 lib_deps.append(t)
             else:
                 other_deps.append(t)
@@ -147,7 +177,7 @@ class Target(object):
     def __repl__(self):
         return self.__str__()
     
-class SrcsTarget(Target):    
+class SrcsTarget(LocalTarget):    
     """Target with srcs
     """
     def __init__(self, 
@@ -156,7 +186,7 @@ class SrcsTarget(Target):
                  srcs,
                  deps=[],
                  roots=[]):
-        Target.__init__(self, work_dir, name, deps, roots)
+        LocalTarget.__init__(self, work_dir, name, deps, roots)
         self.srcs = to_list(srcs)
         self.builder = None
         
