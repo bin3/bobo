@@ -64,7 +64,7 @@ class Target(object):
         workspace: //3rd/glog/glog
         external: #glog
         """
-        console.info('building target: %s' % name)
+        console.info('Loaded target: %s' % name)
         self.work_dir = work_dir
         self.name = name
         self.deps = to_list(deps)

@@ -24,6 +24,18 @@ BUILD_DIR = 'build'
 NAME_SEP = '__'
 ENV_PREFIX = 'env_'
 
+# colors
+colors = {}
+colors['red']    = '\033[31m'
+colors['green']  = '\033[32m'
+colors['yellow'] = '\033[33m'
+colors['blue']   = '\033[34m'
+colors['purple'] = '\033[1;35m'
+colors['cyan']   = '\033[36m'
+colors['white']  = '\033[37m'
+colors['gray']   = '\033[38m'
+colors['end']    = '\033[0m'
+
 HEAD_RULES = """import os
 
 top_env = Environment(ENV=os.environ)
@@ -35,3 +47,22 @@ top_env.Append(LIBPATH=BUILD_DIR)
 VariantDir(BUILD_DIR, '.', duplicate=0)
 
 """
+
+def gen_output_control_rules_str():
+	compile_str = '%sCompiling $SOURCE%s' % (colors['yellow'], colors['end'])
+	link_str = '%sCompiling $TARGET%s' % (colors['purple'], colors['end'])
+	build_lib_str = '%sBuilding $TARGET%s' % (colors['purple'], colors['end'])
+	ranlib_str = '%sranlib $TARGET%s' % (colors['purple'], colors['end'])
+	build_bin_str = '%sBuilding $TARGET%s' % (colors['red'], colors['end'])
+	rules_str = "top_env.Append(\n\
+		CCCOMSTR = '%s',\n\
+		CXXCOMSTR = '%s',\n\
+		SHCCCOMSTR = '%s',\n\
+		SHCXXCOMSTR = '%s',\n\
+		ARCOMSTR = '%s',\n\
+		RANLIBCOMSTR = '%s',\n\
+		LINKCOMSTR = '%s',\n\
+		SHLINKCOMSTR = '%s'\n)\n\n" \
+		% (compile_str, compile_str, compile_str, compile_str, build_lib_str, ranlib_str, build_bin_str, build_bin_str)
+	return rules_str
+

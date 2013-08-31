@@ -22,5 +22,6 @@ __date__ = '2013-8-25'
 import logging
 
 FORMAT = '[%(asctime)-15s %(threadName)s %(filename)s/%(funcName)s:%(lineno)d %(levelname)s] %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+#ogging.basicConfig(format=FORMAT, level=logging.DEBUG)
+logging.basicConfig(format=FORMAT, level=logging.INFO)
 #log = logging.getLogger(__name__)
