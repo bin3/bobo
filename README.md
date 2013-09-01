@@ -21,7 +21,7 @@ Usage
 cd <WORKSPACE_DIR>
 touch BUILD_ROOT
 ```
-* Edit a `BUILD` file in a directory project, which is a sub-directory of the worksapce directory.
+* Edit a `BUILD` file in a project directory, which is a sub-directory of the worksapce directory.
 
 ```
 cd <PROJECT_DIR>
@@ -74,7 +74,7 @@ Differences between bobo and blade
 * bobo supports external libraries and headers by `libs` and `incs` options.
 * bobo is under Apache V2 license, which is more friendly to users and developers.
 
-Target types
+Supported target types
 ----
 * `cc_library`: build a library.
 * `cc_binary`: build a binary.
