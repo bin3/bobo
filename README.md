@@ -15,13 +15,13 @@ sudo ./setup.py install
 ```
 Usage
 ----
-* Create `BUILD_ROOT` file in the top directory of a worksapce.
+* Create the `BUILD_ROOT` file in the workspace directory.
 
 ```
 cd <WORKSPACE_DIR>
 touch BUILD_ROOT
 ```
-* Edit a `BUILD` file in the directory of a project.
+* Edit a `BUILD` file in a directory project, which is a sub-directory of the worksapce directory.
 
 ```
 cd <PROJECT_DIR>
@@ -76,7 +76,7 @@ Differences between bobo and blade
 
 Target types
 ----
-* cc_library: build a library.
-* cc_binary: build a binary.
-* cc_test: build unittest binary based on `gtest`.
-* proto_library: build a `protobuf` library.
+* `cc_library`: build a library.
+* `cc_binary`: build a binary.
+* `cc_test`: build unittest binary based on `gtest`.
+* `proto_library`: build a `protobuf` library.
