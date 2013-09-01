@@ -3,7 +3,7 @@ bobo
 
 Bobo is an easy to use building tool inspired by [blade](https://github.com/chen3feng/typhoon-blade).
 
-Dependency
+Dependencies
 ----
 * python
 * scons
@@ -15,13 +15,13 @@ sudo ./setup.py install
 ```
 Usage
 ----
-* Create BUILD_ROOT file in the top directory of a worksapce.
+* Create `BUILD_ROOT` file in the top directory of a worksapce.
 
 ```
 cd <WORKSPACE_DIR>
 touch BUILD_ROOT
 ```
-* Edit a BUILD file in the directory of a project.
+* Edit a `BUILD` file in the directory of a project.
 
 ```
 cd <PROJECT_DIR>
@@ -73,3 +73,10 @@ Differences between bobo and blade
 * bobo supports sub-workspace by `roots` option.
 * bobo supports external libraries and headers by `libs` and `incs` options.
 * bobo is under Apache V2 license, which is more friendly to users and developers.
+
+Target types
+----
+* cc_library: build a library.
+* cc_binary: build a binary.
+* cc_test: build unittest binary based on `gtest`.
+* proto_library: build a `protobuf` library.
