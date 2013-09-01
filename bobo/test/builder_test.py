@@ -35,6 +35,9 @@ class Test(unittest.TestCase):
     def test_cc_binary(self):
         builder.main('build example'.split()) 
 
+    def test_cc_proto(self):
+        builder.main('build proto'.split()) 
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

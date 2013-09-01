@@ -41,10 +41,21 @@ def cc_binary(name,
         roots=[]):
     t = target.CcBinary(_loader.get_work_dir(), name, srcs, deps, roots)
     _loader.load_target(t)
+    
+def proto_library(name,
+        srcs=[],
+        deps=[],
+        roots=[]):
+    t = target.ProtoLibrary(_loader.get_work_dir(), name, srcs, deps, roots)
+    _loader.load_target(t)
 
-def cc_test():
-    pass
-
+def cc_test(name,
+        srcs=[],
+        deps=[],
+        roots=[]):
+    t = target.CcTest(_loader.get_work_dir(), name, srcs, deps, roots)
+    _loader.load_target(t)
+    
 def workerspace():
     pass
 

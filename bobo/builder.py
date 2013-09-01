@@ -95,8 +95,7 @@ class Builder(object):
         return self.work_dir
         
     def gen_head_rules(self):
-        self.rules.append(generator.HEAD_RULES)
-        self.rules.append(generator.gen_output_control_rules_str())
+        self.rules.append(generator.gen_head_rules_str())
         
     def gen_rules(self, target):
         self.rules += target.gen_rules()

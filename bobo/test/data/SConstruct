@@ -6,7 +6,10 @@ BUILD_DIR = 'build'
 top_env.Append(CPPPATH='.')
 top_env.Append(LIBPATH=BUILD_DIR)
 
-VariantDir(BUILD_DIR, '.', duplicate=0)
+VariantDir(BUILD_DIR, '.', duplicate=0) 
+
+__proto_builder = Builder(action = 'protoc -I.  -I`dirname $SOURCE` --cpp_out=. $SOURCE')
+top_env.Append(BUILDERS = {'Proto': __proto_builder})
 
 top_env.Append(
 		CCCOMSTR = '[33mCompiling $SOURCE[0m',
@@ -19,6 +22,17 @@ top_env.Append(
 		SHLINKCOMSTR = '[31mBuilding $TARGET[0m'
 )
 
-env_cc_library__adder = top_env.Clone()
-cc_library__adder = env_cc_library__adder.StaticLibrary('build/cc_library/adder', ['build/cc_library/adder.cpp'])
+env_proto__example_proto = top_env.Clone()
+env_proto__example_proto.Proto('NO_TARGET', ['build/proto/example.proto'])
+proto__example_proto = env_proto__example_proto.StaticLibrary('build/proto/example_proto', ['build/proto/example.pb.cc'])
+
+env_proto__example = top_env.Clone()
+proto__example = env_proto__example.StaticLibrary('build/proto/example', ['build/proto/example.cpp'])
+env_proto__example.Depends(proto__example, proto__example_proto)
+
+env_proto__example_test = top_env.Clone()
+proto__example_test = env_proto__example_test.Program('build/proto/example_test', ['build/proto/example_test.cpp'], LIBS=['gtest', 'gtest_main', 'glog', 'protobuf', proto__example_proto, proto__example])
+
+env_proto__example_main = top_env.Clone()
+proto__example_main = env_proto__example_main.Program('build/proto/example_main', ['build/proto/main.cpp'], LIBS=['glog', 'protobuf', proto__example_proto, proto__example])
 

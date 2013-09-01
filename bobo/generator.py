@@ -44,13 +44,19 @@ BUILD_DIR = 'build'
 top_env.Append(CPPPATH='.')
 top_env.Append(LIBPATH=BUILD_DIR)
 
-VariantDir(BUILD_DIR, '.', duplicate=0)
-
+VariantDir(BUILD_DIR, '.', duplicate=0) 
 """
+
+def gen_builder_rules_str():
+	PROTO_BUILDER = '__proto_builder'
+	rules = []
+	rules.append("%s = Builder(action = 'protoc -I.  -I`dirname $SOURCE` --cpp_out=. $SOURCE')" % PROTO_BUILDER)
+	rules.append("top_env.Append(BUILDERS = {'Proto': %s})" % PROTO_BUILDER)
+	rules.append('')
+	return '\n'.join(rules)
 
 def gen_output_control_rules_str():
 	compile_str = '%sCompiling $SOURCE%s' % (colors['yellow'], colors['end'])
-	link_str = '%sCompiling $TARGET%s' % (colors['purple'], colors['end'])
 	build_lib_str = '%sBuilding $TARGET%s' % (colors['purple'], colors['end'])
 	ranlib_str = '%sranlib $TARGET%s' % (colors['purple'], colors['end'])
 	build_bin_str = '%sBuilding $TARGET%s' % (colors['red'], colors['end'])
@@ -66,3 +72,9 @@ def gen_output_control_rules_str():
 		% (compile_str, compile_str, compile_str, compile_str, build_lib_str, ranlib_str, build_bin_str, build_bin_str)
 	return rules_str
 
+def gen_head_rules_str():
+	rules = []
+	rules.append(HEAD_RULES)
+	rules.append(gen_builder_rules_str())
+	rules.append(gen_output_control_rules_str())
+	return '\n'.join(rules)

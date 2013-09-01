@@ -148,7 +148,8 @@ class LocalTarget(Target):
         lib_deps = []
         other_deps = []
         for t in self.all_dep_targets:
-            if isinstance(t, CcLibrary) or isinstance(t, ExternalTarget):
+            if isinstance(t, ExternalTarget) or isinstance(t, CcLibrary) or \
+            isinstance(t, ProtoLibrary):
                 lib_deps.append(t)
             else:
                 other_deps.append(t)
@@ -168,8 +169,9 @@ class LocalTarget(Target):
         self.rules.append('%s = %s.Clone()\n' % (self.env, TOP_ENV))
         
     def gen_depend_rules(self, deps):
-        if len(deps) > 0:
-            self.rules.append('%s.Depends(%s, %s)\n' % (self.env, self.full_name, self.names_str(deps)))
+        for dep in deps:
+            if not isinstance(dep, ExternalTarget):
+                self.rules.append('%s.Depends(%s, %s)\n' % (self.env, self.get_build_name(), dep.get_build_name()))
     
     def __str__(self):
         return 'key: %s, deps: %s, roots: %s' % (self.key, self.deps, self.roots)
@@ -207,7 +209,6 @@ class CcLibrary(SrcsTarget):
                  deps=[],
                  roots=[]):
         SrcsTarget.__init__(self, work_dir, name, srcs, deps, roots)
-        self.builder = 'StaticLibrary'
         
     def gen_rules(self):
         self.gen_env_rule()
@@ -229,7 +230,6 @@ class CcBinary(SrcsTarget):
                  deps=[],
                  roots=[]):
         SrcsTarget.__init__(self, work_dir, name, srcs, deps, roots)
-        self.builder = 'Program'
 
     def gen_rules(self):
         self.gen_env_rule()
@@ -242,3 +242,65 @@ class CcBinary(SrcsTarget):
         self.gen_depend_rules(other_deps)
         self.rules.append('\n')
         return self.rules
+
+class CcTest(SrcsTarget):    
+    """cc_test
+    """
+    def __init__(self, 
+                 work_dir,
+                 name,
+                 srcs,
+                 deps=[],
+                 roots=[]):
+        deps = to_list(deps)
+        deps.extend(['#gtest', '#gtest_main'])
+        SrcsTarget.__init__(self, work_dir, name, srcs, deps, roots)
+
+    def gen_rules(self):
+        self.gen_env_rule()
+        (lib_deps, other_deps) = self.split_deps()
+        self.rules.append('%s = %s.Program(%s, [%s], LIBS=[%s])\n' % \
+                     (self.full_name, self.env, 
+                      self.gen_build_target(), 
+                      self.gen_build_srcs(),
+                      self.names_str(lib_deps)))
+        self.gen_depend_rules(other_deps)
+        self.rules.append('\n')
+        return self.rules
+    
+class ProtoLibrary(SrcsTarget):    
+    """proto_library
+    """
+    PROTO_SUFFIX = '.proto'
+    CC_SUFFIX = '.pb.cc'
+    
+    def __init__(self, 
+                 work_dir,
+                 name,
+                 srcs,
+                 deps=[],
+                 roots=[]):
+        deps = to_list(deps)
+        deps.append('#protobuf')
+        SrcsTarget.__init__(self, work_dir, name, srcs, deps, roots)
+
+    def gen_rules(self):
+        self.gen_env_rule()
+        self.rules.append("%s.Proto('NO_TARGET', [%s])\n" % \
+                     (self.env, self.gen_build_srcs()))
+        self.rules.append('%s = %s.StaticLibrary(%s, [%s])\n' % \
+                          (self.full_name, self.env,
+                          self.gen_build_target(), 
+                          self.gen_cc_srcs()))
+        self.gen_depend_rules(self.all_dep_targets)
+        self.rules.append('\n')
+        return self.rules
+    
+    def gen_cc_srcs(self):
+        cc_srcs = []
+        for src in self.srcs:
+            if src.endswith(ProtoLibrary.PROTO_SUFFIX):
+                src = src[:-len(ProtoLibrary.PROTO_SUFFIX)] + ProtoLibrary.CC_SUFFIX
+            cc_srcs.append(quote(os.path.join(generator.BUILD_DIR, self.work_dir, src)))
+        return ', '.join(cc_srcs)
+    

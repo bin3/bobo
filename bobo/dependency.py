@@ -71,7 +71,7 @@ class DependencyAnalyzer(object):
         # check dependency loop
         if sum(self.out_degs.values()) != 0:
             loop_paths = [path for path, deg in self.out_degs.items() if deg != 0]
-            console.abort('Exist dependency loop: %s' % loop_paths)
+            console.abort('Dependency loop exists: %s' % loop_paths)
     
     def _gen_sorted_targets(self):     
         sorted_targets = []
